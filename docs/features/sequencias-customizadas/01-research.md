@@ -36,9 +36,10 @@ O backend carrega `data/top/dataset_final.csv` em memória e usa a tag
 pré-computada `SEQ_FAMOSA` para as 6 sequências de `main.py:40-45`; não existe
 matching em tempo real. A tag foi gerada por `get_famosas` em
 `scripts/generate_data_set.py:7-24`, e a regra que reproduz exatamente a coluna
-é: após **lowercasing** dos dois lados, ocorrência **contígua e ordenada** da
-sequência na lista de acordes da música **e** todos os acordes da música
-pertencentes ao conjunto de acordes da sequência. `Musica.acordes` é
+é: ocorrência **contígua e ordenada** da sequência na lista de acordes da música
+**e** todos os acordes da música pertencentes ao conjunto de acordes da
+sequência. Com **lowercasing** dos dois lados ela reproduz as 6; com a **caixa
+preservada** também (verificado, 0 divergências nas 6). `Musica.acordes` é
 `list(set(cifra))` e perde ordem/repetição (`musica.py:17`); a regra só é
 reproduzível com `Musica.cifra` ordenada (`musica.py:16`). A tela
 `#/porsequencia` tem 4 sequências hardcoded, um subconjunto das 6 do backend, e
@@ -87,12 +88,13 @@ Correspondência com as perguntas do template:
 - A coluna bruta só contém `0`..`5` ou `NA` (7 valores distintos; nenhum id
   múltiplo). O mapeamento id → nome está em
   `data/mapeamento_sequencias_famosas.txt:1-6`.
-- Repetições (dedução a partir da regra; **a confirmar com script na proposta**):
-  como a sequência precisa aparecer como bloco contíguo, um acorde repetido
-  **dentro** do bloco (ex.: `Bm, Bm, G, D, A` buscando `Bm,G,D,A`) não impede o
-  match se o bloco exato aparecer a partir da segunda ocorrência, mas uma
-  repetição no meio (ex.: `Bm, G, G, D, A`) impede. Repetições **fora** do bloco
-  são permitidas, desde que todos os acordes da música pertençam à sequência.
+- Repetições (**confirmado por script** em 2026-11-06; ver "Verificação das
+  hipóteses em aberto" abaixo): como a sequência precisa aparecer como bloco
+  contíguo, um acorde repetido **dentro** do bloco (ex.: `Bm, Bm, G, D, A`
+  buscando `Bm,G,D,A`) não impede o match se o bloco exato aparecer a partir da
+  segunda ocorrência, mas uma repetição no meio (ex.: `Bm, G, G, D, A`) impede.
+  Repetições **fora** do bloco são permitidas, desde que todos os acordes da
+  música pertençam à sequência.
 
 Contagens por definição, sobre as 67.585 músicas carregadas (tudo comparado em
 minúsculas):
@@ -110,6 +112,28 @@ A tabela mostra que nem “contígua” nem “conjunto” isolados reproduzem a
 conjunção reproduz. Os totais de “conjunto” incluem as 8.141 músicas sem cifra
 (conjunto vazio é subconjunto de qualquer sequência). O campo `acordes`
 (`musica.py:17`) não preserva a ordem necessária para a parte contígua.
+
+#### Verificação das hipóteses em aberto (script de 2026-11-06)
+
+Script curto importando `main` (sem reler o CSV manualmente), com
+`contigua(m.cifra, seq)` e `set(m.cifra) ⊆ set(seq)`:
+
+- **Caixa preservada (case-sensitive nos dois lados).** Para as 6, a regra com os
+  tokens como em `main.py` (`Bm,G,D,A` etc.) reproduziu exatamente as tags, com
+  **0 divergências** (199, 296, 4, 5, 7, 3). A versão em minúsculas também deu 0.
+  Como nenhuma das 6 contém `7M`/`7m`, preservar a caixa **não conflita com a
+  regressão**; a comparação `bm,g,d,a` contra `m.cifra` é que diverge (514
+  músicas, como já registrado).
+- **Repetições (casos sintéticos):**
+  - `Bm,Bm,G,D,A` buscando `Bm,G,D,A` → **match** (o bloco exato começa na 2ª nota).
+  - `Bm,G,G,D,A` buscando `Bm,G,D,A` → **sem match** (repetição quebra o bloco).
+  - `Bm,G,D,A,Bm` buscando `Bm,G,D,A` → **match** (repetição fora do bloco).
+  - `Bm,G,D,A` buscando `Bm,Bm,G,D,A` → **sem match** (a sequência exige o bloco repetido).
+  - `Bm,Bm,G,D,A` buscando `Bm,Bm,G,D,A` → **match**.
+  Nos dados reais da seq 0 (199 matches), 197 têm acordes extras/repetidos fora
+  do bloco e 73 têm repetição adjacente em algum ponto; exemplos:
+  `capital-inicial_a-sua-maneira` (bloco `Bm,G,D,A` repetido) e
+  `vedder-eddie_society` (repetições internas fora do bloco).
 
 ### 2. Formato dos acordes no CSV
 
@@ -282,7 +306,7 @@ Opções levantadas a partir das descobertas acima. A escolha fica para
 | Opção | Prós | Contras |
 | --- | --- | --- |
 | Minúsculas (como o gerador da tag) | Reproduz as 6 (verificado) | Colapsa `7M` e `7m`, que são acordes diferentes |
-| Caixa preservada | Mantém o significado musical | Ainda não verificado se reproduz as 6 |
+| Caixa preservada | Mantém o significado musical; **verificado: reproduz as 6 com 0 divergências** | Entrada precisa respeitar a caixa do dataset (`bm,g,d,a` não casa) |
 
 ### Momento do cálculo
 
@@ -344,15 +368,13 @@ enunciado (`00-enunciado.md`) e no teste de regressão das 6 sequências origina
 - **Banco.** Precisa caber no container único (ADR 0001); persistir entre
   recriações do container exige volume em subdiretório dedicado (seção 5).
 
-### A verificar na proposta
+### Verificados (script) ou a decidir na proposta
 
-- **Caixa (`7M` ≠ `7m`).** A tag foi gerada com lowercasing, o que colapsa `7M` e
-  `7m`. A validação da seção 1 comparou sequência em minúsculas com `m.cifra`
-  original, e não testou comparação com a caixa preservada nos dois lados. Antes
-  de decidir, verificar se a comparação case-sensitive também reproduz as 6 com 0
-  divergências; se sim, preservar a caixa; se não, a regressão prevalece e o
-  conflito é registrado.
-- **Repetições.** Confirmar com script o comportamento deduzido na seção 1.
+- **Caixa (`7M` ≠ `7m`).** Verificado: a comparação case-sensitive reproduz as 6
+  com 0 divergências. Preservar a caixa é compatível com a regressão; a decisão
+  fica na proposta.
+- **Repetições.** Verificado: o comportamento é o deduzido na seção 1 (bloco
+  contíguo literal; repetições fora do bloco são permitidas).
 - **Formato da chave.** A API concatena os acordes sem separador (`BmGDA`), o que
   pode ser ambíguo para sequências novas. Avaliar identificar a sequência pela
   lista de acordes, não pela string concatenada.
