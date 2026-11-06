@@ -23,7 +23,7 @@
 4. **Frontend existente**: o que a página `#/porsequencia`
    (`static/templates/sequencia.html` +
    `static/assets/js/controllers/sequencia.js`) já faz? Repare que ela tem hoje uma
-   lista *hardcoded no JavaScript* de 4 sequências (`sequencia1`..`sequencia4`),
+   lista _hardcoded no JavaScript_ de 4 sequências (`sequencia1`..`sequencia4`),
    diferente das 6 que existem no backend — um detalhe real e pré-existente do
    código, não um erro seu, que vale entender antes de decidir o que precisa
    mudar.
@@ -51,13 +51,13 @@ declara.
 
 Correspondência com as perguntas do template:
 
-| Pergunta | Seções |
-| --- | --- |
-| 1. Algoritmo de matching | 1, 2 |
-| 2. Validação da hipótese | 1 |
-| 3. Banco de dados | 5 |
-| 4. Frontend existente | 3, 4 |
-| (custo da busca, apoio às decisões) | 6 |
+| Pergunta                            | Seções |
+| ----------------------------------- | ------ |
+| 1. Algoritmo de matching            | 1, 2   |
+| 2. Validação da hipótese            | 1      |
+| 3. Banco de dados                   | 5      |
+| 4. Frontend existente               | 3, 4   |
+| (custo da busca, apoio às decisões) | 6      |
 
 ### 1. SEQ_FAMOSA e regra de matching
 
@@ -294,55 +294,55 @@ Opções levantadas a partir das descobertas acima. A escolha fica para
 
 ### Algoritmo de matching
 
-| Opção | Prós | Contras |
-| --- | --- | --- |
-| Contígua + conjunto (regra da tag) | Reproduz as 6 com 0 divergências; mesmo comportamento de hoje | Muito restritiva: exclui músicas com qualquer acorde fora da sequência (ex.: Em,G casa com 4 de 67.585 músicas); sequências novas tendem a retornar poucos resultados |
-| Só contígua | Mais intuitiva ("a sequência aparece na música"); mais resultados (ex.: 866 vs 199 para Bm,G,D,A) | Quebra a regressão das 6 |
-| Conjunto sem ordem | Simples; não depende da ordem | Quebra a regressão; inclui as 8.141 músicas sem cifra como falso positivo |
-| Híbrida (6 pela tag, novas por outra regra) | Passa na regressão sem limitar as novas | Comportamento inconsistente entre sequências; as 6 deixam de validar o algoritmo novo |
+| Opção                                       | Prós                                                                                              | Contras                                                                                                                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contígua + conjunto (regra da tag)          | Reproduz as 6 com 0 divergências; mesmo comportamento de hoje                                     | Muito restritiva: exclui músicas com qualquer acorde fora da sequência (ex.: Em,G casa com 4 de 67.585 músicas); sequências novas tendem a retornar poucos resultados |
+| Só contígua                                 | Mais intuitiva ("a sequência aparece na música"); mais resultados (ex.: 866 vs 199 para Bm,G,D,A) | Quebra a regressão das 6                                                                                                                                              |
+| Conjunto sem ordem                          | Simples; não depende da ordem                                                                     | Quebra a regressão; inclui as 8.141 músicas sem cifra como falso positivo                                                                                             |
+| Híbrida (6 pela tag, novas por outra regra) | Passa na regressão sem limitar as novas                                                           | Comportamento inconsistente entre sequências; as 6 deixam de validar o algoritmo novo                                                                                 |
 
 ### Normalização de caixa
 
-| Opção | Prós | Contras |
-| --- | --- | --- |
-| Minúsculas (como o gerador da tag) | Reproduz as 6 (verificado) | Colapsa `7M` e `7m`, que são acordes diferentes |
-| Caixa preservada | Mantém o significado musical; **verificado: reproduz as 6 com 0 divergências** | Entrada precisa respeitar a caixa do dataset (`bm,g,d,a` não casa) |
+| Opção                              | Prós                                                                           | Contras                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Minúsculas (como o gerador da tag) | Reproduz as 6 (verificado)                                                     | Colapsa `7M` e `7m`, que são acordes diferentes                    |
+| Caixa preservada                   | Mantém o significado musical; **verificado: reproduz as 6 com 0 divergências** | Entrada precisa respeitar a caixa do dataset (`bm,g,d,a` não casa) |
 
 ### Momento do cálculo
 
-| Opção | Prós | Contras |
-| --- | --- | --- |
-| Em tempo real a cada busca | Simples | ~0,28 s por varredura, repetida a cada página |
-| Pré-cálculo no cadastro, resultado salvo | Busca vira leitura; o catálogo de músicas é fixo (CSV), então o resultado não fica desatualizado | Cadastro mais lento; mais dados persistidos |
-| Cache em memória | Rápido após a primeira busca | Perdido ao reiniciar; primeira busca continua lenta |
+| Opção                                    | Prós                                                                                             | Contras                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| Em tempo real a cada busca               | Simples                                                                                          | ~0,28 s por varredura, repetida a cada página       |
+| Pré-cálculo no cadastro, resultado salvo | Busca vira leitura; o catálogo de músicas é fixo (CSV), então o resultado não fica desatualizado | Cadastro mais lento; mais dados persistidos         |
+| Cache em memória                         | Rápido após a primeira busca                                                                     | Perdido ao reiniciar; primeira busca continua lenta |
 
 ### Banco de dados
 
-| Opção | Prós | Contras |
-| --- | --- | --- |
-| SQLite | Biblioteca padrão; sem dependência nova; SQL e transações | Um escritor por vez (relevante só com mais workers) |
-| TinyDB | Simples, JSON legível | Dependência nova; sem transações fortes |
-| `shelve`/`dbm` | Biblioteca padrão | Sem consultas; formato dependente da plataforma |
-| DuckDB | Bom para análise | Dependência nova; não pensado para escrita concorrente |
-| Postgres/MySQL/Mongo | Robustos | Exigem serviço externo; conflitam com o ADR 0001 |
+| Opção                | Prós                                                      | Contras                                                |
+| -------------------- | --------------------------------------------------------- | ------------------------------------------------------ |
+| SQLite               | Biblioteca padrão; sem dependência nova; SQL e transações | Um escritor por vez (relevante só com mais workers)    |
+| TinyDB               | Simples, JSON legível                                     | Dependência nova; sem transações fortes                |
+| `shelve`/`dbm`       | Biblioteca padrão                                         | Sem consultas; formato dependente da plataforma        |
+| DuckDB               | Bom para análise                                          | Dependência nova; não pensado para escrita concorrente |
+| Postgres/MySQL/Mongo | Robustos                                                  | Exigem serviço externo; conflitam com o ADR 0001       |
 
 ### Persistência
 
-| Opção | Prós | Contras |
-| --- | --- | --- |
-| Camada gravável do container | Nada a configurar | Perde os dados com `docker rm`/recriação |
+| Opção                                                 | Prós                                        | Contras                                        |
+| ----------------------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
+| Camada gravável do container                          | Nada a configurar                           | Perde os dados com `docker rm`/recriação       |
 | Volume nomeado em subdiretório (ex.: `/app/instance`) | Sobrevive à recriação; não esconde o código | Exige mudar o comando de execução e documentar |
-| Bind mount | Arquivo visível no host | Depende de caminho do host |
+| Bind mount                                            | Arquivo visível no host                     | Depende de caminho do host                     |
 
 ### Frontend
 
-| Opção | Prós | Contras |
-| --- | --- | --- |
-| Lista vinda de `GET` no backend | Atende ao requisito; resolve as 2 sequências ausentes da UI | Mais uma chamada ao carregar a página |
-| Cadastro na mesma página `#/porsequencia` | Fluxo direto: cadastrar e buscar | Página fica mais carregada |
-| Cadastro em página separada | Separa responsabilidades | Mais navegação; mais código |
-| Entrada como texto livre (`Bm,G,D,A`) | Simples de implementar | Erros de digitação; exige validação |
-| Seleção acorde a acorde | Menos erro de entrada | Mais complexa; muitos acordes possíveis |
+| Opção                                     | Prós                                                        | Contras                                 |
+| ----------------------------------------- | ----------------------------------------------------------- | --------------------------------------- |
+| Lista vinda de `GET` no backend           | Atende ao requisito; resolve as 2 sequências ausentes da UI | Mais uma chamada ao carregar a página   |
+| Cadastro na mesma página `#/porsequencia` | Fluxo direto: cadastrar e buscar                            | Página fica mais carregada              |
+| Cadastro em página separada               | Separa responsabilidades                                    | Mais navegação; mais código             |
+| Entrada como texto livre (`Bm,G,D,A`)     | Simples de implementar                                      | Erros de digitação; exige validação     |
+| Seleção acorde a acorde                   | Menos erro de entrada                                       | Mais complexa; muitos acordes possíveis |
 
 ## Decisões em aberto (resolvidas na proposta)
 
