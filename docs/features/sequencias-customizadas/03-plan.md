@@ -15,7 +15,8 @@
 
 **Timeline (estimativa, 1 dev, dataset já presente)**
 - Passo 1: 1–2h; Passo 2: 2–3h; Passo 3: 2–3h; Passo 4: 2–3h; Passo 5: 2–3h; Passo 6: 1–2h.
-- Total: ~10–16h (~1,5–2 dias). Não inclui revisão de código nem imprevistos de dataset.
+- Revisão após implementação (frontend): 4h adicionais (R1–R4).
+- Total: ~14–20h (~2–2,5 dias). Não inclui revisão de código nem imprevistos de dataset.
 
 1. [ ] **Passo 1 — Harness de regressão + inventário de rotas (antes de tocar no código)**
    - Criar `tests/test_regression.py` (stdlib `unittest`; `pytest` não está instalado) que sobe o app com o client de teste e compara `/similares?sequencia=...` com os baselines, paginando até página vazia.
@@ -68,6 +69,70 @@
    - Verificação: suíte verde, persistência comprovada, regressão idêntica ao baseline, rotas sem verbos/`DELETE`; README reproduz o comando.
    - Estimativa: 1–2h.
 
+## Revisão após implementação — frontend `#/porsequencia`
+
+**Motivo:** a primeira implementação do Passo 5 entregou catálogo, cadastro e
+busca por `id`, mas a revisão de uso apontou que o título do cadastro ficava
+solto junto da lista, o destaque acendia acordes iguais em outras sequências, o
+formulário era empurrado para baixo pelo catálogo, ajuda/sucesso tinham pouco
+contraste no magenta, o sucesso não identificava a sequência e campo/botão não
+seguiam o padrão visual. Esta revisão altera apenas o frontend; backend, banco e
+API não mudam.
+
+7. [ ] **Revisão após implementação — R1: seção de cadastro colapsável acima do catálogo**
+   - Em `static/templates/sequencia.html`, criar uma seção inline colapsável antes
+     do catálogo, com o cabeçalho “Cadastre uma sequência” como título e
+     acionador; alinhar o campo ao cabeçalho e separar cadastro e lista com um
+     divisor. Antes de haver seleção, o painel esquerdo ocupa a largura toda; o
+     painel direito só é renderizado depois que uma sequência é escolhida.
+   - Em `static/assets/js/controllers/sequencia.js`, adicionar o estado de
+     aberto/fechado, abrir com foco no campo e não colapsar automaticamente após
+     sucesso, duplicata ou erro; o fechamento é manual.
+   - Em `static/assets/css/app.css`, escopar os estilos da seção sem herdar a
+     margem de `.viewWindow-panel-container h4:first-child`, preservar o
+     espaçamento superior da navbar/logo e ajustar o empilhamento em telas
+     estreitas.
+   - Verificação: abrir/fechar pelo cabeçalho, cadastrar mantendo a seção aberta,
+     confirmar cadastro acima da lista e catálogo longo sem empurrar o formulário.
+   - Estimativa: 1h.
+
+8. [ ] **Revisão após implementação — R2: seleção e destaque por sequência**
+   - Em `static/assets/js/controllers/sequencia.js`, substituir `temAcorde` por
+     uma verificação baseada no `id` da sequência selecionada
+     (`isSequenciaSelecionada(sequencia)`), mantendo `minhaSequencia` para a busca.
+   - Em `static/templates/sequencia.html`, aplicar `acorde-checked` apenas aos
+     hexágonos da sequência selecionada e marcar a linha ativa apenas com fundo
+     sutil, sem contorno ou sombra branca; após cadastrar ou detectar duplicata,
+     selecionar a sequência retornada pela API.
+   - Verificação: clicar em `Bm,G,D,A` e depois em `C,G,Am,F`; apenas os
+     hexágonos da segunda devem mudar de cor. Cadastro novo e duplicata devem
+     selecionar/destacar a sequência correta.
+   - Estimativa: 1h.
+
+9. [ ] **Revisão após implementação — R3: mensagens, contraste e estilo de campo/botão**
+   - Em `static/assets/js/controllers/sequencia.js`, montar a mensagem com os
+     acordes da sequência criada (“Sequência Bm,G,D,A cadastrada.”) e informar a
+     sequência existente na duplicata; manter a área de mensagens dentro da seção.
+   - Em `static/assets/css/app.css`, usar texto branco para ajuda/status e uma
+     área de sucesso de alto contraste sobre `#372478`; ajustar placeholder, foco
+     do campo e a scrollbar do catálogo (trilho escuro translúcido, polegar
+     branco); substituir o cinza do `btn-default` pelo tratamento dos controles do
+     painel (fundo transparente, borda/texto brancos, inversão no hover).
+   - Verificação: conferir contraste no DevTools, foco visível, botão no padrão do
+     app, mensagens de sucesso/duplicata/erro legíveis e nomeando a sequência.
+   - Estimativa: 1h.
+
+10. [ ] **Revisão após implementação — R4: validação visual e regressão**
+    - Testar no browser em desktop e viewport estreito: abrir/fechar a seção,
+      cadastrar, duplicar, errar a entrada, buscar com e sem gênero, rolar o
+      catálogo e confirmar que só a sequência escolhida é destacada.
+    - Testar navegação por teclado (foco no campo, abertura/fechamento) e
+      ausência de erros no console.
+    - Rodar `node --check static/assets/js/controllers/sequencia.js` e a suíte
+      existente; confirmar que não há mudanças em backend, banco ou API.
+    - Atualizar `04-test-report.md` com o resultado da validação visual.
+    - Estimativa: 1h.
+
 ## Arquivos afetados
 
 | Arquivo | Mudança |
@@ -80,8 +145,10 @@
 | `matching.py` | Novo: normalização, regra contígua + subconjunto, cálculo de matches. |
 | `sequencias_db.py` | Novo: SQLite, esquema, seed, CRUD, matches, `dataset_version`. |
 | `main.py` | Rotas `/sequencias` (GET/POST), busca por `sequencia_id`, compatibilidade com `sequencia=`, seed/cache. |
-| `static/assets/js/controllers/sequencia.js` | Catálogo via API, cadastro, busca por id. |
-| `static/templates/sequencia.html` | Formulário, mensagens e lista vinda do backend. |
+| `static/assets/js/controllers/sequencia.js` | Catálogo via API, cadastro, busca por id, seção colapsável e seleção por `id` (revisão). |
+| `static/templates/sequencia.html` | Cadastro colapsável acima da lista, mensagens, linha selecionada e catálogo vindo do backend (revisão). |
+| `static/assets/css/app.css` | Revisão visual: seção colapsável, contraste, campo/botão e estado selecionado. |
+| `docs/features/sequencias-customizadas/frontend.md` | Decisões de layout, fluxo, seleção e contraste da revisão. |
 | `Dockerfile` | Criar `/app/instance` (sem `VOLUME`). |
 | `README.md` | Comando de execução com volume nomeado. |
 | `.gitignore`, `.dockerignore` | Ignorar `instance/` e arquivos do banco. |
@@ -109,7 +176,8 @@
 - [ ] Inventário de rotas verde: só as rotas esperadas; nenhum path com verbo; nenhum `DELETE`/`PUT`/`PATCH`; `POST` apenas em `/sequencias`.
 - [ ] Banco SQLite criado, 6 originais semeadas de forma idempotente e matches iguais ao gabarito; `dataset_version` reconstruindo quando o CSV muda.
 - [ ] `GET /sequencias`, `POST /sequencias` (201/200/400) e `GET /similares?sequencia_id=` (200/404) funcionando; parâmetro `sequencia=` preservado; respostas em `json.dumps`.
-- [ ] Frontend `#/porsequencia` lista as 6 + novas, cadastra, trata duplicata/erro e busca por id; filtro de gênero preservado.
+- [ ] Frontend `#/porsequencia` lista as 6 + novas, cadastra em seção colapsável acima da lista, trata duplicata/erro, busca por id e mantém o filtro de gênero.
+- [ ] Revisão após implementação: apenas a sequência escolhida é destacada, a mensagem de sucesso nomeia a sequência e campo/botão/ajuda seguem o contraste e o padrão visual do app.
 - [ ] Persistência comprovada com volume nomeado após `docker restart` e `docker rm`/recriação; README e ignores atualizados.
 - [ ] Suíte completa verde e `04-test-report.md` preenchido com cobertura, comando e resultado da regressão.
 - [ ] Nenhuma mudança fora do escopo: músicas/gêneros continuam no CSV, sem login/edição/exclusão, sem dependência nova.

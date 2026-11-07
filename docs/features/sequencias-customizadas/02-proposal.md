@@ -158,16 +158,28 @@ A página `#/porsequencia` deixa de usar as 4 sequências hardcoded
 - exibir as 6 originais e as novas com o mesmo componente `df-hex`
   (`sequencia.html:6-8`), convertendo `acordes` (array de strings) para o formato
   `{acorde, cor}` que o template espera;
-- ter um campo de texto livre e um botão de cadastro (`POST /sequencias`), com
-  mensagens de carregando, erro de validação e sucesso; ao cadastrar, atualiza a
-  lista e seleciona a sequência criada (ou a existente, no caso de duplicata);
+- concentrar o cadastro em uma **seção colapsável inline acima do catálogo**,
+  separada da lista por um divisor; o cabeçalho “Cadastre uma sequência” é o
+  título da seção e o acionador do abrir/fechar, com o campo alinhado a ele;
+- abrir a seção com foco no campo e mantê-la aberta após sucesso, duplicata ou
+  erro; o colapso é sempre manual, por decisão do usuário;
+- enviar `POST /sequencias` com mensagens de carregando, erro de validação e
+  sucesso **dentro da seção**; a mensagem nomeia a sequência, e a criada (ou a
+  existente, em duplicata) é recarregada, selecionada e destacada na lista;
+- selecionar e destacar por `id` da sequência, não por nome de acorde: apenas os
+  hexágonos da sequência escolhida mudam de cor, e a linha selecionada recebe
+  uma marca visual própria;
+- usar texto branco e uma área de sucesso de alto contraste sobre o magenta,
+  seguindo os textos dos demais painéis, e alinhar campo/botão ao padrão visual
+  do app (sem o cinza padrão do `btn-default`);
 - buscar com `GET /similares?sequencia_id=<id>` em vez de montar a string
   concatenada (`sequencia.js:55-77`), mantendo o filtro de gênero e a renderização
   atual.
 
-O padrão visual existente é mantido (AngularJS 1.4.9 + Bootstrap, sem build). A
-implementação do frontend será feita em sessão separada, conforme `CONTEXT.md`, e
-as decisões registradas em `frontend.md`.
+O padrão visual existente é mantido (AngularJS 1.4.9 + Bootstrap, sem build). As
+decisões de layout, estados e contraste estão registradas em `frontend.md`; a
+revisão visual pós-implementação está detalhada em `03-plan.md`, na seção
+“Revisão após implementação”. Backend, banco e API não mudam nesta revisão.
 
 ### Persistência e deploy
 
@@ -195,8 +207,9 @@ externo.
 | `Dockerfile` | Criar `/app/instance` (sem `VOLUME`; o volume é nomeado no `docker run`). |
 | `README.md` | Comando de execução com volume nomeado. |
 | `.dockerignore`, `.gitignore` | Ignorar `instance/` e arquivos do banco. |
-| `static/assets/js/controllers/sequencia.js` | Catálogo via API, cadastro e busca por `sequencia_id`. |
-| `static/templates/sequencia.html` | Formulário de cadastro e lista vinda do backend. |
+| `static/assets/js/controllers/sequencia.js` | Catálogo via API, cadastro, busca por `sequencia_id`, seção colapsável e seleção por `id`. |
+| `static/templates/sequencia.html` | Cadastro colapsável acima do catálogo, mensagens, linha selecionada e lista vinda do backend. |
+| `static/assets/css/app.css` | Revisão visual: seção colapsável, contraste, botão/campo e estado selecionado. |
 | `tests/` | Testes de algoritmo, validação, API e regressão contra `tests/baseline/`. |
 | `docs/adr/0002-persist-custom-sequences.md` | Registro da decisão de persistência. |
 
