@@ -1,4 +1,4 @@
-angular.module('deciframeApp').controller('SequenciaController', function($http, $window, ngProgressFactory, $anchorScroll, $location, GENEROS) {
+angular.module('deciframeApp').controller('SequenciaController', function($http, $window, ngProgressFactory, $anchorScroll, $location, GENEROS, $timeout) {
   var COR_ACORDE = '#2E1C74';
   var vm = this;
   vm.sequenciasFamosas = [];
@@ -17,6 +17,7 @@ angular.module('deciframeApp').controller('SequenciaController', function($http,
   vm.isCadastrando = false;
   vm.mensagemCadastro = "";
   vm.erroCadastro = "";
+  vm.cadastroAberto = false;
 
   var paraSequencia = function(item) {
     return {
@@ -36,6 +37,13 @@ angular.module('deciframeApp').controller('SequenciaController', function($http,
     }
   };
 
+  var nomeSequencia = function(sequencia) {
+    if (sequencia && sequencia.acordes && sequencia.acordes.length) {
+      return sequencia.acordes.join(',');
+    }
+    return (vm.novaSequencia || '').trim();
+  };
+
   var carregarSequencias = function(idParaSelecionar) {
     vm.carregandoSequencias = true;
     vm.erroSequencias = "";
@@ -53,14 +61,22 @@ angular.module('deciframeApp').controller('SequenciaController', function($http,
       });
   };
 
-  vm.temAcorde = function(acorde) {
-    var nome = acorde && acorde.acorde ? acorde.acorde : acorde;
-    if (!vm.minhaSequencia.acordes) {
-      return false;
+  vm.isSequenciaSelecionada = function(sequencia) {
+    return !!sequencia && !!vm.minhaSequencia &&
+      vm.minhaSequencia.id === sequencia.id;
+  };
+
+  vm.toggleCadastro = function() {
+    vm.cadastroAberto = !vm.cadastroAberto;
+    if (!vm.cadastroAberto) {
+      return;
     }
-    return vm.minhaSequencia.acordes.some(function(item) {
-      return item.acorde === nome;
-    });
+    $timeout(function() {
+      var campo = $window.document.getElementById('nova-sequencia');
+      if (campo) {
+        campo.focus();
+      }
+    }, 0);
   };
 
   vm.cadastrarSequencia = function() {
@@ -75,10 +91,11 @@ angular.module('deciframeApp').controller('SequenciaController', function($http,
     vm.mensagemCadastro = "";
     $http.post('sequencias', { acordes: vm.novaSequencia })
       .success(function(data, status) {
+        var acordes = nomeSequencia(data);
         vm.isCadastrando = false;
         vm.mensagemCadastro = status === 201 ?
-          "Sequência cadastrada." :
-          "Essa sequência já estava cadastrada.";
+          "Sequência " + acordes + " cadastrada." :
+          "Sequência " + acordes + " já estava cadastrada.";
         vm.novaSequencia = "";
         carregarSequencias(data.id);
       })
